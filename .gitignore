@@ -1,0 +1,31 @@
+/target/
+**/target/
+# Rust / Cargo
+target/
+**/target/
+
+# Editor backups and temp files
+*~
+**/*.rs.bk
+**/*.swp
+**/*.tmp
+
+# IDEs and editors
+/.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Cargo
+Cargo.lock
+
+# Logs
+*.log
+
+# Build artifacts
+**/*.rlib
+**/*.rmeta
+
+# Generated or analysis files
+/*.ghidra*
