@@ -12,11 +12,14 @@ use ratatui::{
 
 use crate::bus::{GamePhase, SystemBus, BOARD_COLS, BOARD_ROWS};
 
+const PLAYFIELD_CELL_WIDTH: usize = 3;
+const PLAYFIELD_CELL_HEIGHT: usize = 2;
+
 /// Pure function: derives the complete terminal UI from SystemBus state.
 /// Called at ~60 FPS from the main loop. NEVER mutates state. NEVER polls input.
 pub fn render_game(frame: &mut Frame, bus: &SystemBus) {
     let chunks = Layout::horizontal([
-        Constraint::Length(22),   // 10 cols × 2 chars + 2 borders
+        Constraint::Length((BOARD_COLS as u16 * PLAYFIELD_CELL_WIDTH as u16) + 4),
         Constraint::Min(20),      // sidebar
     ])
     .split(frame.size());
@@ -46,8 +49,9 @@ pub fn render_game(frame: &mut Frame, bus: &SystemBus) {
 // ─── Playfield ─────────────────────────────────────────────────────────────
 
 fn render_playfield(frame: &mut Frame, area: ratatui::layout::Rect, bus: &SystemBus) {
-    let mut lines: Vec<Line> = Vec::with_capacity(22);
-    lines.push(Line::from(Span::raw("┌────────────────────┐")));
+    let mut lines: Vec<Line> = Vec::with_capacity((BOARD_ROWS * PLAYFIELD_CELL_HEIGHT) + 2);
+    let horizontal = "─".repeat(BOARD_COLS * PLAYFIELD_CELL_WIDTH);
+    lines.push(Line::from(Span::raw(format!("┌{}┐", horizontal))));
 
     for y in 0..BOARD_ROWS {
         let mut spans: Vec<Span> = Vec::with_capacity(12);
@@ -60,23 +64,26 @@ fn render_playfield(frame: &mut Frame, area: ratatui::layout::Rect, bus: &System
 
             if cell != 0 {
                 let color = piece_color(cell);
-                spans.push(Span::styled("██", Style::default().fg(color).bg(dim(color))));
+                spans.push(Span::styled("███", Style::default().fg(color).bg(dim(color))));
             } else if active {
                 let color = piece_color(bus.piece_type.0 + 1);
-                spans.push(Span::styled("██", Style::default().fg(color).bg(dim(color))));
+                spans.push(Span::styled("███", Style::default().fg(color).bg(dim(color))));
             } else if ghost {
                 let color = piece_color(bus.piece_type.0 + 1);
-                spans.push(Span::styled("░░", Style::default().fg(color).reversed()));
+                spans.push(Span::styled("░░░", Style::default().fg(color).reversed()));
             } else {
-                spans.push(Span::raw("  "));
+                spans.push(Span::raw("   "));
             }
         }
 
         spans.push(Span::raw("│"));
-        lines.push(Line::from(spans));
+        let line = Line::from(spans);
+        for _ in 0..PLAYFIELD_CELL_HEIGHT {
+            lines.push(line.clone());
+        }
     }
 
-    lines.push(Line::from(Span::raw("└────────────────────┘")));
+    lines.push(Line::from(Span::raw(format!("└{}┘", horizontal))));
 
     let p = Paragraph::new(Text::from(lines)).block(Block::bordered().title(" TETRIS "));
     frame.render_widget(p, area);

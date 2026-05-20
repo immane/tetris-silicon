@@ -451,6 +451,97 @@ This is genuinely long-term (5–15 year) speculation contingent on fault-tolera
 
 ---
 
+## Strategic Visions (Validated)
+
+The following visions are promising, but they require explicit scope boundaries to remain
+engineering-realistic.
+
+### 1) Silicon Compiler / Auto-Synthesis Toolchain
+
+**Vision**: Build a toolchain (Rust `syn`/`quote` + dependency-graph analyzer) that can ingest a
+bus contract and auto-generate or auto-wire chips from prompts.
+
+**Validated potential**:
+- High for code generation, static checks, and motherboard integration scaffolding
+- Medium for fully automatic chip correctness without human review
+
+**What is realistic now**:
+- Parse chip ASTs and extract read/write sets for each bus field
+- Build a chip dependency DAG and detect unsafe write conflicts
+- Auto-insert chips into valid motherboard layers based on declared dependencies
+- Generate chip skeletons from templates tied to bus contract fields
+
+**What is not realistic yet**:
+- "One prompt, fully correct chip at scale" without test or formal-validation gates
+- Safe autonomous merge from thousands of agents without conflict arbitration
+
+**Near-term milestones (0-6 months)**:
+1. `chip-analyzer`: static read/write graph extractor
+2. `chip-linter`: privilege-boundary checker (chip can only touch declared fields)
+3. `chip-scaffold`: prompt-to-template code generator
+4. `auto-layerer`: deterministic chip placement proposal + conflict report
+
+### 2) Formal Verification and Provable Software Loop
+
+**Vision**: Deliver mathematically justified cores for high-assurance domains (games, trading,
+autonomous driving kernels, blockchain VM subsystems).
+
+**Validated potential**:
+- High for safety invariants and bounded correctness
+- Medium for full liveness/progress proofs
+- Low for "provably bug-free" as a blanket claim across whole real-world systems
+
+**Engineering truth**:
+- "Provably bug-free" is achievable only relative to a formal spec and proof assumptions
+- Most practical programs can reach "proof-backed critical invariants + tested behavior" rather than
+  total correctness end-to-end
+
+**Practical loop**:
+1. Formalize bus invariants (TLA+, Alloy, or theorem prover model)
+2. Enforce property tests and regression seeds in CI
+3. Add bounded model checks for critical chip clusters
+4. Gate releases on proof obligations for safety-critical fields
+
+### 3) Heterogeneous Silicon System
+
+**Vision**: Keep one silicon-style contract while dispatching chips across heterogeneous backends
+(CPU scalar, SIMD, GPU kernels, FPGA/HLS candidates, and optional remote accelerators).
+
+**Validated potential**:
+- High for CPU/SIMD/GPU mixed execution
+- Medium for FPGA offload of selected kernels
+- Low for whole-system transparent heterogenous scheduling without strict runtime contracts
+
+**Key constraints**:
+- Backend boundary must preserve deterministic tick semantics
+- Cross-device latency must fit the clock budget
+- Data marshaling costs can dominate arithmetic speedups
+
+**Near-term milestones (0-12 months)**:
+1. Define backend-agnostic chip ABI (inputs, outputs, determinism contract)
+2. Implement CPU baseline + SIMD board-scan kernels
+3. Prototype GPU offload for embarrassingly parallel analyses
+4. Benchmark deterministic equivalence across backends
+
+### 4) AI-Native End-to-End Platform
+
+**Vision**: Platformize the full lifecycle: contract authoring, chip synthesis, dependency analysis,
+verification, simulation, and safe merge orchestration.
+
+**Validated potential**:
+- High for productivity and consistency
+- Medium for autonomous end-to-end operation in safety-critical domains
+
+**Required guardrails**:
+- Policy layer: field-level write permissions per chip
+- Verification layer: tests/proofs as merge gates
+- Traceability layer: every generated chip linked to prompt, model version, and proof/test artifact
+- Rollback layer: deterministic replay and bisect on any failed invariant
+
+**Success metric**:
+Not "zero human involvement", but measurable reduction in lead time while preserving or improving
+defect density and post-release incident rates.
+
 ## Roadmap Ideas
 
 - Replace LCG piece generation with configurable 7-bag while keeping deterministic seed injection
@@ -460,6 +551,9 @@ This is genuinely long-term (5–15 year) speculation contingent on fault-tolera
 - TLA⁺ specification of the tick state machine for bounded model checking
 - Automated bus field dependency graph extractor (proc-macro) for parallelism analysis
 - Reversible chip prototype for collision detection (research experiment)
+- Build `chip-analyzer` + `auto-layerer` as first Silicon Compiler modules
+- Add backend-agnostic chip ABI and deterministic cross-backend conformance tests
+- Add provenance tracking for AI-generated chips (prompt/model/test-proof linkage)
 
 ## License
 
