@@ -31,13 +31,16 @@ pub fn render_game(frame: &mut Frame, bus: &SystemBus) {
         Constraint::Length(1),    // spacer
         Constraint::Length(7),    // Next
         Constraint::Length(1),    // spacer
+        Constraint::Length(7),    // Controls
+        Constraint::Length(1),    // spacer
         Constraint::Min(3),       // Stats
     ])
     .split(chunks[1]);
 
     render_mini(frame, side[0], " HOLD ", bus.hold_piece_type.map(|p| p.0));
     render_mini(frame, side[2], " NEXT ", Some(bus.next_piece_type.0));
-    render_status(frame, side[4], bus);
+    render_controls(frame, side[4]);
+    render_status(frame, side[6], bus);
 
     match bus.game_phase {
         GamePhase::Paused => render_overlay(frame, frame.size(), "PAUSED", Color::Yellow),
@@ -161,6 +164,24 @@ fn render_status(frame: &mut Frame, area: ratatui::layout::Rect, bus: &SystemBus
     ];
     frame.render_widget(
         Paragraph::new(Text::from(lines)).block(Block::bordered().title(" STATS ")),
+        area,
+    );
+}
+
+// ─── Controls Panel ───────────────────────────────────────────────────────
+
+fn render_controls(frame: &mut Frame, area: ratatui::layout::Rect) {
+    let lines = vec![
+        Line::from(Span::raw(" ←/→ or h/l : Move left/right ")),
+        Line::from(Span::raw(" ↓ or j     : Soft drop        ")),
+        Line::from(Span::raw(" Space      : Hard drop        ")),
+        Line::from(Span::raw(" z / x / ↑  : Rotate (CCW/CW)  ")),
+        Line::from(Span::raw(" c          : Hold             ")),
+        Line::from(Span::raw(" Enter      : Pause            ")),
+        Line::from(Span::raw(" Esc        : Quit             ")),
+    ];
+    frame.render_widget(
+        Paragraph::new(Text::from(lines)).block(Block::bordered().title(" CONTROLS ")),
         area,
     );
 }

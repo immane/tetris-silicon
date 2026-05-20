@@ -10,6 +10,20 @@ Instead of object call chains, this project models software as a synchronous dig
 
 The result is a codebase that is highly deterministic, easy to reason about, and especially friendly to AI-assisted development.
 
+## Terminology Conventions
+
+This document uses the following terms consistently:
+- **Input Pins**: external sampled inputs for the current tick only
+- **System Bus**: global state carrier, including registers and wires
+- **Registers**: persistent state across ticks
+- **Wires**: per-tick ephemeral signals, reset at tick start
+- **Logic Chips**: stateless transition units
+- **Motherboard**: deterministic scheduler of chip layers
+- **Tick**: one full sample-propagate-latch cycle
+
+When discussing future portability, **SFL (Silicon Formal Language)** is the semantic source of truth,
+while Rust/C/CUDA/HDL implementations are backend realizations.
+
 ## Why This Project Exists
 
 Traditional game code is often organized around classes, mutable object graphs, and implicit control flow. That style can scale, but it frequently introduces:
@@ -37,7 +51,7 @@ External I/O -> InputPins (frozen snapshot)
 
 Clock lifecycle per tick:
 1. **Sampling**: poll external input into `InputPins`
-2. **Combinational Propagation**: chips read pins/bus and write bus wires
+2. **Combinational Propagation**: chips read Input Pins/System Bus and write wires
 3. **Sequential Latching**: motherboard commits edge/state for next tick
 
 ## Project Architecture
@@ -101,7 +115,7 @@ Why this helps AI:
 
 1. Ask AI to implement one chip with one responsibility.
 2. Input to chip: `&InputPins`, `&mut SystemBus`.
-3. Output from chip: bus wire/register mutations only.
+3. Output from chip: System Bus register/wire mutations only.
 4. No cross-chip calls; no hidden cache/state.
 
 Prompt template:
@@ -265,14 +279,59 @@ These predicates can be machine-checked via:
 Formal proof of liveness (e.g., "the game always eventually spawns a new piece given valid input") and full
 termination proofs require interactive theorem provers such as Coq or Lean 4.
 This is theoretically tractable but non-trivial: the reactive system with stochastic input (LCG
-pieced generator) requires explicit modelling of the random stream, and liveness arguments must
+piece generator) requires explicit modelling of the random stream, and liveness arguments must
 account for all possible input sequences. Substantial proof engineering effort is needed.
+
+---
+
+## Silicon Formal Language Outlook (Post-Rust Core)
+
+### Goal
+
+Evolve the paradigm from a Rust implementation style into a language-independent formal specification layer.
+Rust then becomes one backend, not the definition of truth.
+
+### Proposed Core: SFL (Silicon Formal Language)
+
+SFL is a declarative intermediate form that defines:
+- bus schema (registers, wires, reset policy)
+- chip contracts (read-set, write-set, phase, determinism constraints)
+- motherboard topology (layer order, dependency edges, forbidden write conflicts)
+- tick semantics (sample, propagate, latch) as formal transition rules
+
+The canonical system meaning is specified in SFL semantics; generated Rust/C/CUDA/HDL code is a backend realization.
+
+### Backend Targets
+
+1. Rust backend: safe reference implementation and fastest iteration path.
+2. C backend: portability and access to mature compiler/HLS ecosystems.
+3. CUDA backend: parallel chip groups and board-scan kernels on GPU.
+4. FPGA/ASIC backend: via HLS/RTL lowering for selected deterministic kernels.
+5. Quantum-oriented backend: interface-layer orchestration and reversible-subset experiments.
+
+### Equivalence Requirement
+
+All backends must satisfy semantic equivalence against SFL under the same input stream and initial state:
+
+$$\forall t\ge 0,\; \text{State}^{(backend)}_t = \text{State}^{(SFL)}_t$$
+
+In practice this should be enforced through:
+- cross-backend differential simulation
+- shared regression seeds and trace replay
+- backend conformance suites at chip and full-tick levels
+
+### Engineering Boundaries
+
+- "One-click to any backend" is a long-term objective, not a current guarantee.
+- GPU/FPGA lowering is realistic first for narrow, compute-heavy chip subsets.
+- Quantum execution is currently an interface-level strategy; full-system quantum lowering is speculative.
+- Rust remains the primary proving ground while SFL and conformance tooling mature.
 
 ---
 
 ### Compiler as Partial Design Rule Checker
 
-Rust's type system and borrow checker enforce a meaningful subset of physical laws automatically:
+For the Rust backend, Rust's type system and borrow checker enforce a meaningful subset of physical laws automatically:
 
 | Physical Rule | Enforcement mechanism |
 |---|---|
