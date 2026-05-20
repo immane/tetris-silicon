@@ -17,7 +17,13 @@ const PLAYFIELD_CELL_HEIGHT: usize = 2;
 
 /// Pure function: derives the complete terminal UI from SystemBus state.
 /// Called at ~60 FPS from the main loop. NEVER mutates state. NEVER polls input.
-pub fn render_game(frame: &mut Frame, bus: &SystemBus) {
+pub fn render_game(
+    frame: &mut Frame,
+    bus: &SystemBus,
+    backend_name: &str,
+    gpu_ticks: u64,
+    chip_backend_lines: &[String],
+) {
     let chunks = Layout::horizontal([
         Constraint::Length((BOARD_COLS as u16 * PLAYFIELD_CELL_WIDTH as u16) + 4),
         Constraint::Min(20),      // sidebar
@@ -33,14 +39,17 @@ pub fn render_game(frame: &mut Frame, bus: &SystemBus) {
         Constraint::Length(1),    // spacer
         Constraint::Length(7),    // Controls
         Constraint::Length(1),    // spacer
-        Constraint::Min(3),       // Stats
+        Constraint::Length(6),    // Stats
+        Constraint::Length(1),    // spacer
+        Constraint::Min(8),       // Chip routing
     ])
     .split(chunks[1]);
 
     render_mini(frame, side[0], " HOLD ", bus.hold_piece_type.map(|p| p.0));
     render_mini(frame, side[2], " NEXT ", Some(bus.next_piece_type.0));
     render_controls(frame, side[4]);
-    render_status(frame, side[6], bus);
+    render_status(frame, side[6], bus, backend_name, gpu_ticks);
+    render_chip_routes(frame, side[8], chip_backend_lines);
 
     match bus.game_phase {
         GamePhase::Paused => render_overlay(frame, frame.size(), "PAUSED", Color::Yellow),
@@ -147,8 +156,13 @@ fn render_mini(
 
 // ─── Status Panel ───────────────────────────────────────────────────────────
 
-fn render_status(frame: &mut Frame, area: ratatui::layout::Rect, bus: &SystemBus) {
-    let lines = vec![
+fn render_status(frame: &mut Frame, area: ratatui::layout::Rect, bus: &SystemBus, backend_name: &str, gpu_ticks: u64) {
+    let backend_color = if backend_name.starts_with("cuda") {
+        Color::Rgb(118, 185, 0)  // NVIDIA green
+    } else {
+        Color::Gray
+    };
+    let mut lines = vec![
         Line::from(vec![
             Span::raw(" Score: "),
             Span::styled(format!("{}", bus.score), Style::default().fg(Color::Yellow)),
@@ -161,11 +175,50 @@ fn render_status(frame: &mut Frame, area: ratatui::layout::Rect, bus: &SystemBus
             Span::raw(" Lines: "),
             Span::styled(format!("{}", bus.lines_cleared), Style::default().fg(Color::Green)),
         ]),
+        Line::from(vec![
+            Span::raw(" Backend: "),
+            Span::styled(backend_name.to_string(), Style::default().fg(backend_color)),
+        ]),
     ];
+    if gpu_ticks > 0 {
+        lines.push(Line::from(vec![
+            Span::raw(" GPU ticks: "),
+            Span::styled(format!("{gpu_ticks}"), Style::default().fg(Color::Rgb(118, 185, 0))),
+        ]));
+    }
     frame.render_widget(
         Paragraph::new(Text::from(lines)).block(Block::bordered().title(" STATS ")),
         area,
     );
+}
+
+fn render_chip_routes(frame: &mut Frame, area: ratatui::layout::Rect, chip_backend_lines: &[String]) {
+    let block = Block::bordered().title(" CHIP ROUTING ");
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    if chip_backend_lines.is_empty() {
+        frame.render_widget(
+            Paragraph::new(Text::from(vec![Line::from(Span::raw(" waiting for first tick... "))])),
+            inner,
+        );
+        return;
+    }
+
+    let mut lines = Vec::with_capacity(chip_backend_lines.len());
+    for line in chip_backend_lines {
+        let color = if line.ends_with(" cuda") {
+            Color::Rgb(118, 185, 0)
+        } else {
+            Color::Gray
+        };
+        lines.push(Line::from(Span::styled(line.clone(), Style::default().fg(color))));
+    }
+
+    let split = (lines.len() + 1) / 2;
+    let cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)]).split(inner);
+    frame.render_widget(Paragraph::new(Text::from(lines[..split].to_vec())), cols[0]);
+    frame.render_widget(Paragraph::new(Text::from(lines[split..].to_vec())), cols[1]);
 }
 
 // ─── Controls Panel ───────────────────────────────────────────────────────

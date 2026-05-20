@@ -23,6 +23,7 @@
 
 在讨论多后端可移植时，以 **SFL（Silicon Formal Language）** 作为语义真值来源，
 Rust/C/CUDA/HDL 代码仅作为后端实现。
+完整的多后端契约与边界定义见 [docs/architecture/SFL_CONTRACT.md](docs/architecture/SFL_CONTRACT.md)。
 
 ## 项目缘起
 
@@ -168,6 +169,7 @@ SFL 作为声明式中间形式，统一定义：
 - tick 语义（采样、传播、锁存）的形式化迁移规则
 
 系统的规范语义由 SFL 给出；Rust/C/CUDA/HDL 代码是后端实现。
+关于“哪些代码属于核心语义、哪些属于后端适配、哪些必须显式降级或拒绝”，请参见 [docs/architecture/SFL_CONTRACT.md](docs/architecture/SFL_CONTRACT.md).
 
 ### 多后端目标
 
@@ -327,6 +329,38 @@ $$\forall t\ge 0,\; \text{State}^{(backend)}_t = \text{State}^{(SFL)}_t$$
 ```bash
 cargo run --release
 ```
+
+可选 CUDA 后端（最小集成路径）：
+
+```bash
+cargo run --release --features cuda
+```
+
+```bash
+TETRIS_BACKEND=cuda cargo run --release --features cuda
+```
+
+CUDA 芯片路由策略（契约对齐的混合执行）：
+
+全部 15 个芯片都可以通过 CUDA 后端执行：
+- **3 个芯片**有 GPU kernel 实现（CollisionDetector、LineClearDetector、GhostComputer）
+- **12 个芯片**通过 LogicChip trait 接口在 CPU 上执行（自动降级，无 GPU kernel）
+
+```bash
+# 默认：全部芯片启用，GPU kernel 在 GPU 上运行，其余芯片在 CPU 上运行
+TETRIS_BACKEND=cuda cargo run --release --features cuda
+
+# 所有芯片都走 CPU（仍保留 CUDA 运行时选择路径）
+TETRIS_BACKEND=cuda TETRIS_CUDA_CHIPS=none cargo run --release --features cuda
+
+# 仅 GPU kernel 芯片（3 个）
+TETRIS_BACKEND=cuda TETRIS_CUDA_CHIPS=CollisionDetector,LineClearDetector,GhostComputer cargo run --release --features cuda
+
+# 自定义列表（逗号分隔芯片名；未列出的芯片在 CPU 上运行）
+TETRIS_BACKEND=cuda TETRIS_CUDA_CHIPS=CollisionDetector,GhostComputer cargo run --release --features cuda
+```
+
+如果运行时 CUDA 不可用，系统会自动回退到 CPU。
 
 开发命令：
 

@@ -23,6 +23,7 @@ This document uses the following terms consistently:
 
 When discussing future portability, **SFL (Silicon Formal Language)** is the semantic source of truth,
 while Rust/C/CUDA/HDL implementations are backend realizations.
+The formal multi-backend contract is documented in [docs/architecture/SFL_CONTRACT.md](docs/architecture/SFL_CONTRACT.md).
 
 ## Why This Project Exists
 
@@ -181,6 +182,38 @@ Requirements:
 cargo run --release
 ```
 
+Optional CUDA backend (minimal integration path):
+
+```bash
+cargo run --release --features cuda
+```
+
+```bash
+TETRIS_BACKEND=cuda cargo run --release --features cuda
+```
+
+CUDA chip routing policy (contract-aligned mixed execution):
+
+All 15 chips can run via CUDA backend:
+- **3 chips** have GPU kernels (CollisionDetector, LineClearDetector, GhostComputer)
+- **12 chips** run on CPU via LogicChip trait interface (automatic fallback, no GPU kernel)
+
+```bash
+# Default: all chips enabled, GPU kernels execute on GPU, others on CPU
+TETRIS_BACKEND=cuda cargo run --release --features cuda
+
+# Force CPU for all chips (still uses CUDA runtime selection path)
+TETRIS_BACKEND=cuda TETRIS_CUDA_CHIPS=none cargo run --release --features cuda
+
+# GPU kernels only (3 chips)
+TETRIS_BACKEND=cuda TETRIS_CUDA_CHIPS=CollisionDetector,LineClearDetector,GhostComputer cargo run --release --features cuda
+
+# Custom list (comma-separated chip names; unlisted chips run on CPU)
+TETRIS_BACKEND=cuda TETRIS_CUDA_CHIPS=CollisionDetector,GhostComputer cargo run --release --features cuda
+```
+
+If CUDA is unavailable at runtime, the engine falls back to CPU automatically.
+
 Controls:
 - Move: `Left/Right` or `h/l`
 - Soft drop: `Down` or `j`
@@ -300,6 +333,7 @@ SFL is a declarative intermediate form that defines:
 - tick semantics (sample, propagate, latch) as formal transition rules
 
 The canonical system meaning is specified in SFL semantics; generated Rust/C/CUDA/HDL code is a backend realization.
+For the full contract boundary, supported backend classes, and adapter rules, see [docs/architecture/SFL_CONTRACT.md](docs/architecture/SFL_CONTRACT.md).
 
 ### Backend Targets
 

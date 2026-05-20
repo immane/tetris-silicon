@@ -17,6 +17,12 @@ use tetris_silicon::motherboard::SiliconMotherboard;
 use tetris_silicon::terminal::{poll_input_pins, RawModeGuard};
 
 fn main() -> io::Result<()> {
+    // Initialise bus and backend BEFORE entering raw mode so that any CUDA
+    // diagnostic messages (device name, fallback warnings) are visible.
+    let mut bus = SystemBus::new(1);
+    let mut motherboard = SiliconMotherboard::new_with_env_backend();
+    eprintln!("[tetris-silicon] backend: {}", motherboard.backend_name());
+
     let _guard = RawModeGuard::enter()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, cursor::Hide)?;
@@ -24,8 +30,7 @@ fn main() -> io::Result<()> {
     let mut terminal = Terminal::new(backend)?;
     terminal.clear()?;
 
-    let mut bus = SystemBus::new(1);
-    let mut motherboard = SiliconMotherboard::new();
+    // bus and motherboard already constructed above
 
     let mut last_tick = Instant::now();
     let mut last_render = Instant::now();
@@ -36,12 +41,15 @@ fn main() -> io::Result<()> {
         let frame_delta_ns = now.duration_since(last_tick).as_nanos() as u64;
         last_tick = now;
         let delta = frame_delta_ns.min(MAX_FRAME_DELTA_NS);
-        let pins = poll_input_pins(delta);
+        let sampled = poll_input_pins(delta);
 
-        motherboard.clock_tick(&pins, &mut bus);
+        motherboard.clock_tick(&sampled.pins, &mut bus);
 
         if now.duration_since(last_render).as_nanos() as u64 >= FRAME_NS {
-            terminal.draw(|f| tetris_silicon::tui::render_game(f, &bus))?;
+            let bn = motherboard.backend_name();
+            let gt = motherboard.gpu_tick_count();
+            let chip_lines = motherboard.chip_backend_lines();
+            terminal.draw(|f| tetris_silicon::tui::render_game(f, &bus, bn, gt, &chip_lines))?;
             last_render = now;
         }
 
@@ -50,8 +58,11 @@ fn main() -> io::Result<()> {
             std::thread::sleep(Duration::from_nanos(500_000));
         }
 
-        if pins.key_escape || bus.game_phase == GamePhase::GameOver {
-            terminal.draw(|f| tetris_silicon::tui::render_game(f, &bus))?;
+        if sampled.pins.key_escape || bus.game_phase == GamePhase::GameOver {
+            let bn = motherboard.backend_name();
+            let gt = motherboard.gpu_tick_count();
+            let chip_lines = motherboard.chip_backend_lines();
+            terminal.draw(|f| tetris_silicon::tui::render_game(f, &bus, bn, gt, &chip_lines))?;
             std::thread::sleep(Duration::from_secs(2));
             break;
         }

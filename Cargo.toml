@@ -3,9 +3,14 @@ name = "tetris-silicon"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+cuda = ["dep:rustacuda"]
+
 [dependencies]
 crossterm = "0.28"
 ratatui = "0.26"
+rustacuda = { version = "0.1", optional = true }
 
 [dev-dependencies]
 proptest = "1.6"
