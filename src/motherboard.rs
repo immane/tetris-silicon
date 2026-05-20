@@ -2,11 +2,12 @@
 // motherboard.rs — SiliconMotherboard: pipeline array + clock tick driver
 // ============================================================================
 
+use crate::backend::BackendRuntime;
 use crate::bus::{GamePhase, InputPins, SystemBus, Wires};
 use crate::chips::{
     Chip, CollisionDetectorChip, DasTimerChip, GhostComputerChip, GravityTimerChip,
     HoldControllerChip, InputDecoderChip, LevelCalculatorChip, LineClearCommitterChip,
-    LineClearDetectorChip, LockDelayTimerChip, LogicChip, MovementChip, PieceLockerChip,
+    LineClearDetectorChip, LockDelayTimerChip, MovementChip, PieceLockerChip,
     RotationChip, ScoreKeeperChip, SpawnControllerChip,
 };
 
@@ -23,6 +24,7 @@ pub struct SiliconMotherboard {
     /// Chips within a layer execute sequentially.
     /// Layers execute in order: 0 → 1 → 2 → 3.
     pub layers: Vec<Vec<Chip>>,
+    backend: BackendRuntime,
 }
 
 impl SiliconMotherboard {
@@ -57,7 +59,35 @@ impl SiliconMotherboard {
                 // Layer 3: UI Transformation
                 vec![Chip::GhostComputer(GhostComputerChip)],
             ],
+            backend: BackendRuntime::cpu(),
         }
+    }
+
+    /// Create a motherboard and select backend from `TETRIS_BACKEND`.
+    ///
+    /// - `cuda`: tries CUDA runtime (if compiled with `--features cuda`),
+    ///   falls back to CPU when unavailable.
+    /// - any other value / missing env: CPU.
+    pub fn new_with_env_backend() -> Self {
+        let mut mb = Self::new();
+        mb.backend = BackendRuntime::from_env();
+        mb
+    }
+
+    pub fn backend_name(&self) -> &str {
+        self.backend.backend_name()
+    }
+
+    pub fn gpu_tick_count(&self) -> u64 {
+        self.backend.gpu_tick_count()
+    }
+
+    pub fn chip_backend_lines(&self) -> Vec<String> {
+        self.backend
+            .chip_backend_routes()
+            .iter()
+            .map(|r| format!("L{} {:<18} {}", r.layer, r.chip, r.backend))
+            .collect()
     }
 
     /// Execute one full clock cycle.
@@ -73,11 +103,7 @@ impl SiliconMotherboard {
         bus.wires = Wires::default();
 
         // ═══ PHASE 1: Combinational Propagation ═══
-        for layer in &self.layers {
-            for chip in layer {
-                chip.tick(pins, bus);
-            }
-        }
+        self.backend.execute_layers(&self.layers, pins, bus);
 
         // ═══ PHASE 2: Sequential Latching (falling edge) ═══
         bus.prev_key_left = pins.key_left;
