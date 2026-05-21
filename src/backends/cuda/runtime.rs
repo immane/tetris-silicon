@@ -10,10 +10,11 @@ use rustacuda::prelude::*;
 use std::ffi::CString;
 
 /// GPU kernel implementations available. All other chips run on CPU via trait interface.
-const CUDA_KERNEL_CHIPS: [ChipId; 3] = [
+const CUDA_KERNEL_CHIPS: [ChipId; 4] = [
     ChipId::CollisionDetector,
     ChipId::LineClearDetector,
     ChipId::GhostComputer,
+    ChipId::Rotation,  // P1: Batch wall kick test optimization
 ];
 
 /// Contract default: chips eligible for CUDA routing (GPU kernel or CPU emulation).
@@ -138,22 +139,36 @@ impl BackendRuntime {
             for chip in layer {
                 let chip_kind = chip_id(chip);
                 let backend_used = if plan.can_run_on_cuda(chip_kind) {
-                    match run_chip_on_cuda(cuda, chip, pins, bus) {
-                        Ok(()) => {
-                            dispatched = dispatched.wrapping_add(1);
-                            "cuda"
+                    if has_gpu_kernel(chip_kind) {
+                        match run_chip_on_cuda(cuda, chip, pins, bus) {
+                            Ok(()) => {
+                                dispatched = dispatched.wrapping_add(1);
+                                "gpu-kernel"
+                            }
+                            Err(err) => {
+                                eprintln!(
+                                    "[backend] chip {} failed on cuda ({}); falling back to trait-cpu for this chip",
+                                    chip_name(chip), err
+                                );
+                                chip.tick(pins, bus);
+                                if chip_mutates_board(chip_kind) {
+                                    cuda.board_synced = false;
+                                }
+                                "trait-cpu"
+                            }
                         }
-                        Err(err) => {
-                            eprintln!(
-                                "[backend] chip {} failed on cuda ({}); falling back to cpu for this chip",
-                                chip_name(chip), err
-                            );
-                            chip.tick(pins, bus);
-                            "cpu"
+                    } else {
+                        chip.tick(pins, bus);
+                        if chip_mutates_board(chip_kind) {
+                            cuda.board_synced = false;
                         }
+                        "trait-cpu"
                     }
                 } else {
                     chip.tick(pins, bus);
+                    if chip_mutates_board(chip_kind) {
+                        cuda.board_synced = false;
+                    }
                     "cpu"
                 };
 
@@ -194,6 +209,10 @@ fn has_gpu_kernel(chip_kind: ChipId) -> bool {
     CUDA_KERNEL_CHIPS.contains(&chip_kind)
 }
 
+fn chip_mutates_board(chip_kind: ChipId) -> bool {
+    matches!(chip_kind, ChipId::PieceLocker | ChipId::LineClearCommitter)
+}
+
 fn run_chip_on_cuda(
     cuda: &mut CudaRuntime,
     chip: &Chip,
@@ -207,6 +226,7 @@ fn run_chip_on_cuda(
             ChipId::CollisionDetector => cuda.run_collision_chip(bus),
             ChipId::LineClearDetector => cuda.run_line_clear_detector_chip(bus),
             ChipId::GhostComputer => cuda.run_ghost_chip(bus),
+            ChipId::Rotation => cuda.run_rotation_chip(bus),  // P1: GPU batch wall kick test
             _ => unreachable!("has_gpu_kernel must match"),
         }
     } else {
@@ -244,6 +264,7 @@ impl CudaRuntime {
             board,
             piece_cells,
             scalar_out,
+            board_synced: false,  // P2: Initially not synced
             _context: context,
         })
     }

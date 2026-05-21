@@ -346,6 +346,11 @@ CUDA 芯片路由策略（契约对齐的混合执行）：
 - **3 个芯片**有 GPU kernel 实现（CollisionDetector、LineClearDetector、GhostComputer）
 - **12 个芯片**通过 LogicChip trait 接口在 CPU 上执行（自动降级，无 GPU kernel）
 
+CUDA 后端接口边界（与 SFL 契约对齐）：
+- 后端代码只允许使用芯片接口与能力元数据（`ChipId`、路由计划、`LogicChip::tick`）
+- 后端代码不得依赖芯片内部结构
+- 无 GPU kernel 的芯片统一经 `LogicChip::tick` 在 CPU 执行
+
 ```bash
 # 默认：全部芯片启用，GPU kernel 在 GPU 上运行，其余芯片在 CPU 上运行
 TETRIS_BACKEND=cuda cargo run --release --features cuda
@@ -360,7 +365,22 @@ TETRIS_BACKEND=cuda TETRIS_CUDA_CHIPS=CollisionDetector,LineClearDetector,GhostC
 TETRIS_BACKEND=cuda TETRIS_CUDA_CHIPS=CollisionDetector,GhostComputer cargo run --release --features cuda
 ```
 
+`TETRIS_CUDA_CHIPS` 模式：
+- `contract`：默认策略（启用全部 15 个芯片）
+- `all`：对全部芯片启用“CUDA 路径”（无 kernel 芯片仍经 trait 在 CPU 执行）
+- `none`：全部芯片强制 CPU
+- `chip1,chip2,...`：仅对列出的芯片启用 CUDA 路由计划
+
 如果运行时 CUDA 不可用，系统会自动回退到 CPU。
+
+操作键位：
+- 左右移动：`Left/Right` 或 `h/l`
+- 软降：`Down` 或 `j`
+- 顺时针旋转：`Up` 或 `x`
+- 逆时针旋转：`z`
+- 暂存：`c`
+- 硬降：`Space`
+- 退出：`Esc`
 
 开发命令：
 
@@ -384,3 +404,4 @@ cargo test
 ## 许可证
 
 MIT — 详见 [LICENSE](LICENSE)。
+

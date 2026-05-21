@@ -207,8 +207,10 @@ fn render_chip_routes(frame: &mut Frame, area: ratatui::layout::Rect, chip_backe
 
     let mut lines = Vec::with_capacity(chip_backend_lines.len());
     for line in chip_backend_lines {
-        let color = if line.ends_with(" cuda") {
+        let color = if line.ends_with(" gpu-kernel") {
             Color::Rgb(118, 185, 0)
+        } else if line.ends_with(" trait-cpu") {
+            Color::Yellow
         } else {
             Color::Gray
         };

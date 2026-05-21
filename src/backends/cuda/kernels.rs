@@ -3,7 +3,7 @@ use crate::bus::{gravity_interval_ns, Cell, InputPins, PieceType, SystemBus, BOA
 use crate::chips::tetrominoes::{I_KICKS, JLSTZ_KICKS, TETROMINOES};
 
 use rustacuda::launch;
-use rustacuda::memory::CopyDestination;
+use rustacuda::memory::{CopyDestination, DeviceBuffer};
 
 impl CudaRuntime {
     pub(super) fn run_collision_chip(&mut self, bus: &mut SystemBus) -> Result<(), String> {
@@ -130,8 +130,11 @@ impl CudaRuntime {
 
         let pt = bus.piece_type.0 as usize;
 
+        self.upload_board(bus)?;
+        self.upload_piece_cells(bus.piece_type.0, to_rot as u8)?;
+
         if pt == 3 {
-            if !self.piece_collides_cfg(bus, bus.piece_x, bus.piece_y, pt as u8, to_rot as u8)? {
+            if !self.piece_collides(bus.piece_x, bus.piece_y)? {
                 bus.piece_rotation = to_rot as u8;
                 bus.wires.collision_any = false;
                 bus.wires.render_dirty = true;
@@ -145,10 +148,14 @@ impl CudaRuntime {
             &JLSTZ_KICKS[from_rot][to_rot]
         };
 
-        for &(dx, dy) in kicks {
-            let test_x = bus.piece_x + dx;
-            let test_y = bus.piece_y + dy;
-            if !self.piece_collides_cfg(bus, test_x, test_y, pt as u8, to_rot as u8)? {
+        // P1 Optimization: Test all 5 kick positions in one GPU batch
+        let success_mask = self.batch_kick_test(bus.piece_x, bus.piece_y, kicks)?;
+
+        for (idx, &(dx, dy)) in kicks.iter().enumerate() {
+            let bit_set = (success_mask & (1 << idx)) != 0;
+            if bit_set {
+                let test_x = bus.piece_x + dx;
+                let test_y = bus.piece_y + dy;
                 bus.piece_x = test_x;
                 bus.piece_y = test_y;
                 bus.piece_rotation = to_rot as u8;
@@ -251,6 +258,7 @@ impl CudaRuntime {
         bus.wires.piece_locked = true;
         bus.wires.should_spawn_next = true;
         bus.wires.render_dirty = true;
+        self.board_synced = false;  // P2: Mark board as out-of-sync
         Ok(())
     }
 
@@ -258,13 +266,8 @@ impl CudaRuntime {
         self.upload_board(bus)?;
         self.upload_piece_cells(bus.piece_type.0, bus.piece_rotation)?;
 
-        let mut gy = bus.piece_y;
-        while gy < BOARD_ROWS as i8 + 4 {
-            if self.piece_collides(bus.piece_x, gy + 1)? {
-                break;
-            }
-            gy += 1;
-        }
+        // P0 Optimization: Use batch ghost_y scan instead of loop
+        let gy = self.ghost_y_scan(bus.piece_x, bus.piece_y)?;
 
         bus.ghost_x = bus.piece_x;
         bus.ghost_y = gy;
@@ -310,6 +313,7 @@ impl CudaRuntime {
         }
 
         bus.wires.render_dirty = true;
+        self.board_synced = false;  // P2: Mark board as out-of-sync after clearing lines
         Ok(())
     }
 
@@ -380,13 +384,20 @@ impl CudaRuntime {
     }
 
     fn upload_board(&mut self, bus: &SystemBus) -> Result<(), String> {
+        // P2: Only upload if not synced
+        if self.board_synced {
+            return Ok(());
+        }
+
         let mut flat = [0u8; BOARD_COLS * BOARD_ROWS];
         for y in 0..BOARD_ROWS {
             for x in 0..BOARD_COLS {
                 flat[y * BOARD_COLS + x] = bus.board[y][x].0;
             }
         }
-        self.board.copy_from(&flat).map_err(|e| e.to_string())
+        self.board.copy_from(&flat).map_err(|e| e.to_string())?;
+        self.board_synced = true;
+        Ok(())
     }
 
     fn upload_piece_cells(&mut self, piece_type: u8, rotation: u8) -> Result<(), String> {
@@ -453,5 +464,62 @@ impl CudaRuntime {
     fn next_rand(state: &mut u32) -> u8 {
         *state = state.wrapping_mul(1664525).wrapping_add(1013904223);
         ((*state >> 16) % 7) as u8
+    }
+
+    /// P0 Optimization: Scan from piece_y downward to find ghost_y in one GPU pass
+    fn ghost_y_scan(&mut self, piece_x: i8, piece_y: i8) -> Result<i8, String> {
+        let module = &self.module;
+        let stream = &self.stream;
+        unsafe {
+            launch!(module.ghost_y_scan<<<1, 1, 0, stream>>>(
+                self.board.as_device_ptr(),
+                self.piece_cells.as_device_ptr(),
+                piece_x as i32,
+                piece_y as i32,
+                self.scalar_out.as_device_ptr()
+            ))
+        }
+        .map_err(|e| e.to_string())?;
+
+        self.stream.synchronize().map_err(|e| e.to_string())?;
+        let mut out = [0u32; 1];
+        self.scalar_out.copy_to(&mut out).map_err(|e| e.to_string())?;
+        Ok(out[0] as i8)
+    }
+
+    /// P1 Optimization: Test 5 wall kick positions in one GPU pass, return success mask
+    fn batch_kick_test(
+        &mut self,
+        piece_x: i8,
+        piece_y: i8,
+        kicks: &[(i8, i8); 5],
+    ) -> Result<u32, String> {
+        let mut kicks_packed = [0i32; 10];
+        for (i, (dx, dy)) in kicks.iter().enumerate() {
+            kicks_packed[i * 2] = *dx as i32;
+            kicks_packed[i * 2 + 1] = *dy as i32;
+        }
+
+        let mut kicks_buf = DeviceBuffer::from_slice(&kicks_packed)
+            .map_err(|e| e.to_string())?;
+
+        let module = &self.module;
+        let stream = &self.stream;
+        unsafe {
+            launch!(module.batch_kick_test<<<1, 1, 0, stream>>>(
+                self.board.as_device_ptr(),
+                self.piece_cells.as_device_ptr(),
+                piece_x as i32,
+                piece_y as i32,
+                kicks_buf.as_device_ptr(),
+                self.scalar_out.as_device_ptr()
+            ))
+        }
+        .map_err(|e| e.to_string())?;
+
+        self.stream.synchronize().map_err(|e| e.to_string())?;
+        let mut out = [0u32; 1];
+        self.scalar_out.copy_to(&mut out).map_err(|e| e.to_string())?;
+        Ok(out[0])
     }
 }

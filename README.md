@@ -198,6 +198,11 @@ All 15 chips can run via CUDA backend:
 - **3 chips** have GPU kernels (CollisionDetector, LineClearDetector, GhostComputer)
 - **12 chips** run on CPU via LogicChip trait interface (automatic fallback, no GPU kernel)
 
+CUDA backend interface boundary (SFL-aligned):
+- Backend code may only use chip interface + capability metadata (`ChipId`, routing plan, `LogicChip::tick`)
+- Backend code must not depend on chip internal structures
+- Chips without GPU kernels always execute through `LogicChip::tick` on CPU
+
 ```bash
 # Default: all chips enabled, GPU kernels execute on GPU, others on CPU
 TETRIS_BACKEND=cuda cargo run --release --features cuda
@@ -212,7 +217,22 @@ TETRIS_BACKEND=cuda TETRIS_CUDA_CHIPS=CollisionDetector,LineClearDetector,GhostC
 TETRIS_BACKEND=cuda TETRIS_CUDA_CHIPS=CollisionDetector,GhostComputer cargo run --release --features cuda
 ```
 
+`TETRIS_CUDA_CHIPS` modes:
+- `contract`: default policy (all 15 chips enabled)
+- `all`: force "CUDA path" on all chips (non-kernel chips still execute on CPU via trait)
+- `none`: force CPU for all chips
+- `chip1,chip2,...`: enable only listed chips in CUDA routing plan
+
 If CUDA is unavailable at runtime, the engine falls back to CPU automatically.
+
+Operation keys:
+- Move left/right: `Left/Right` or `h/l`
+- Soft drop: `Down` or `j`
+- Rotate clockwise: `Up` or `x`
+- Rotate counter-clockwise: `z`
+- Hold: `c`
+- Hard drop: `Space`
+- Exit: `Esc`
 
 Controls:
 - Move: `Left/Right` or `h/l`
@@ -651,3 +671,12 @@ defect density and post-release incident rates.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+
+
+
+
+
+
+
+

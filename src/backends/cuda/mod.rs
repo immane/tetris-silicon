@@ -12,6 +12,7 @@ pub(super) struct CudaRuntime {
     pub(super) board: DeviceBuffer<u8>,
     pub(super) piece_cells: DeviceBuffer<i32>,
     pub(super) scalar_out: DeviceBuffer<u32>,
+    pub(super) board_synced: bool,  // P2: Track if device board is in sync with CPU
     // Keep CUDA context as the last field so it drops after stream/module/buffers.
     pub(super) _context: Context,
 }
