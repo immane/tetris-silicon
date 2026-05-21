@@ -343,8 +343,13 @@ TETRIS_BACKEND=cuda cargo run --release --features cuda
 CUDA 芯片路由策略（契约对齐的混合执行）：
 
 全部 15 个芯片都可以通过 CUDA 后端执行：
-- **3 个芯片**有 GPU kernel 实现（CollisionDetector、LineClearDetector、GhostComputer）
-- **12 个芯片**通过 LogicChip trait 接口在 CPU 上执行（自动降级，无 GPU kernel）
+- **4 个芯片**有 GPU kernel 实现（CollisionDetector、LineClearDetector、GhostComputer、Rotation）
+- **11 个芯片**通过 `LogicChip` trait 在 CPU 上执行（自动降级，无 GPU kernel）
+
+已实现的优化：
+- **P0（ghost_y_scan）**：GPU 向下扫描内核，一次计算出 ghost Y，减少主机↔设备往返和逐次检查开销。
+- **P1（batch_kick_test）**：GPU 内核并行评估 5 个墙踢偏移，返回紧凑结果（位掩码/索引），可在不逐次主机调用的情况下完成旋转解析。
+- **P2（持久设备棋盘）**：设备端驻留棋盘并带有 `board_synced` 标志，使用惰性上传语义；CPU 侧对棋盘的变更会显式使该标志失效以避免设备读取陈旧状态。
 
 CUDA 后端接口边界（与 SFL 契约对齐）：
 - 后端代码只允许使用芯片接口与能力元数据（`ChipId`、路由计划、`LogicChip::tick`）

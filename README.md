@@ -195,8 +195,13 @@ TETRIS_BACKEND=cuda cargo run --release --features cuda
 CUDA chip routing policy (contract-aligned mixed execution):
 
 All 15 chips can run via CUDA backend:
-- **3 chips** have GPU kernels (CollisionDetector, LineClearDetector, GhostComputer)
-- **12 chips** run on CPU via LogicChip trait interface (automatic fallback, no GPU kernel)
+- **4 chips** have GPU kernels (CollisionDetector, LineClearDetector, GhostComputer, Rotation)
+- **11 chips** run on CPU via `LogicChip` trait interface (automatic fallback, no GPU kernel)
+
+Optimizations implemented:
+- **P0 (ghost_y_scan):** GPU downward scan kernel that computes the ghost Y in a single pass, reducing host↔device roundtrips and per-check overhead.
+- **P1 (batch_kick_test):** GPU kernel that evaluates the five wall-kick offsets in parallel and returns a compact result (bitmask/index), enabling rotation resolution without iterative host calls.
+- **P2 (persistent device board):** Device-resident board with a `board_synced` flag and lazy upload semantics; CPU-side board mutations explicitly invalidate the flag to avoid reading stale device state.
 
 CUDA backend interface boundary (SFL-aligned):
 - Backend code may only use chip interface + capability metadata (`ChipId`, routing plan, `LogicChip::tick`)
