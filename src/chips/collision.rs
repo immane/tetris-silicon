@@ -1,7 +1,7 @@
+pub(crate) use super::CollisionDetectorChip;
+use super::LogicChip;
 use crate::bus::{InputPins, SystemBus};
 use crate::chips::tetrominoes::collides;
-use super::LogicChip;
-pub(crate) use super::CollisionDetectorChip;
 
 impl LogicChip for CollisionDetectorChip {
     fn tick(&self, _pins: &InputPins, bus: &mut SystemBus) {

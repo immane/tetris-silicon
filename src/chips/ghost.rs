@@ -1,7 +1,7 @@
+pub(crate) use super::GhostComputerChip;
+use super::LogicChip;
 use crate::bus::{InputPins, SystemBus};
 use crate::chips::tetrominoes::ghost_y;
-use super::LogicChip;
-pub(crate) use super::GhostComputerChip;
 
 impl LogicChip for GhostComputerChip {
     fn tick(&self, _pins: &InputPins, bus: &mut SystemBus) {

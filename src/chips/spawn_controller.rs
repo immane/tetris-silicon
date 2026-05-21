@@ -1,7 +1,7 @@
-use crate::bus::{InputPins, SystemBus, PieceType};
-use crate::chips::tetrominoes::collides;
 use super::LogicChip;
 pub(crate) use super::SpawnControllerChip;
+use crate::bus::{InputPins, PieceType, SystemBus};
+use crate::chips::tetrominoes::collides;
 
 /// Simple LCG for deterministic piece generation.
 fn next_rand(state: &mut u32) -> u8 {

@@ -226,10 +226,7 @@ pub fn assert_deterministic(bus_before: &SystemBus, pins: &InputPins) {
     );
     assert_eq!(bus1.score, bus2.score, "score diverged");
     assert_eq!(bus1.level, bus2.level, "level diverged");
-    assert_eq!(
-        bus1.lines_cleared, bus2.lines_cleared,
-        "lines diverged"
-    );
+    assert_eq!(bus1.lines_cleared, bus2.lines_cleared, "lines diverged");
     assert_eq!(bus1.game_phase, bus2.game_phase, "game_phase diverged");
     assert_eq!(
         bus1.gravity_accumulator_ns, bus2.gravity_accumulator_ns,

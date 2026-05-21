@@ -1,14 +1,12 @@
-use crate::bus::{InputPins, SystemBus};
-use super::LogicChip;
 pub(crate) use super::LockDelayTimerChip;
+use super::LogicChip;
+use crate::bus::{InputPins, SystemBus};
 
 impl LogicChip for LockDelayTimerChip {
     fn tick(&self, pins: &InputPins, bus: &mut SystemBus) {
         let cannot_fall = bus.wires.collision_down && bus.wires.dy == 0;
-        let moved = bus.wires.dx != 0
-            || bus.wires.dy != 0
-            || bus.wires.rotate_cw
-            || bus.wires.rotate_ccw;
+        let moved =
+            bus.wires.dx != 0 || bus.wires.dy != 0 || bus.wires.rotate_cw || bus.wires.rotate_ccw;
 
         if moved && !cannot_fall {
             bus.lock_delay_accumulator_ns = 0;

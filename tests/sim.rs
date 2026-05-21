@@ -2,7 +2,7 @@
 // tests/sim.rs — Integration simulation: fast-forward 1000 game frames
 // ============================================================================
 
-use tetris_silicon::bus::{InputPins, SystemBus, GamePhase, BOARD_COLS, BOARD_ROWS, FRAME_NS};
+use tetris_silicon::bus::{GamePhase, InputPins, SystemBus, BOARD_COLS, BOARD_ROWS, FRAME_NS};
 use tetris_silicon::chips::tetrominoes::TETROMINOES;
 use tetris_silicon::motherboard::SiliconMotherboard;
 
@@ -55,20 +55,34 @@ fn assert_bus_integrity(bus: &SystemBus) {
             assert!(
                 cell <= 7,
                 "Corrupted board cell at ({}, {}): value {} exceeds max 7",
-                x, y, cell
+                x,
+                y,
+                cell
             );
         }
     }
 
     // Piece type must be 0-6
-    assert!(bus.piece_type.0 < 7, "Invalid piece_type: {}", bus.piece_type.0);
-    assert!(bus.next_piece_type.0 < 7, "Invalid next_piece_type: {}", bus.next_piece_type.0);
+    assert!(
+        bus.piece_type.0 < 7,
+        "Invalid piece_type: {}",
+        bus.piece_type.0
+    );
+    assert!(
+        bus.next_piece_type.0 < 7,
+        "Invalid next_piece_type: {}",
+        bus.next_piece_type.0
+    );
     if let Some(held) = bus.hold_piece_type {
         assert!(held.0 < 7, "Invalid hold_piece_type: {}", held.0);
     }
 
     // Rotation must be 0-3
-    assert!(bus.piece_rotation <= 3, "Invalid rotation: {}", bus.piece_rotation);
+    assert!(
+        bus.piece_rotation <= 3,
+        "Invalid rotation: {}",
+        bus.piece_rotation
+    );
 
     // Game phase must be valid
     match bus.game_phase {
@@ -76,21 +90,57 @@ fn assert_bus_integrity(bus: &SystemBus) {
     }
 
     // Score, level, lines must not overflow
-    assert!(bus.score < 100_000_000, "Score absurdly high: {}", bus.score);
-    assert!(bus.level > 0 && bus.level < 100, "Level out of range: {}", bus.level);
-    assert!(bus.lines_cleared < 10_000, "Lines cleared absurdly high: {}", bus.lines_cleared);
+    assert!(
+        bus.score < 100_000_000,
+        "Score absurdly high: {}",
+        bus.score
+    );
+    assert!(
+        bus.level > 0 && bus.level < 100,
+        "Level out of range: {}",
+        bus.level
+    );
+    assert!(
+        bus.lines_cleared < 10_000,
+        "Lines cleared absurdly high: {}",
+        bus.lines_cleared
+    );
 
     // Timer values must be reasonable
-    assert!(bus.gravity_accumulator_ns < 10_000_000_000, "Gravity accumulator absurd: {}", bus.gravity_accumulator_ns);
-    assert!(bus.das_accumulator_ns < 10_000_000_000, "DAS accumulator absurd: {}", bus.das_accumulator_ns);
-    assert!(bus.lock_delay_accumulator_ns < 10_000_000_000, "Lock delay accumulator absurd: {}", bus.lock_delay_accumulator_ns);
+    assert!(
+        bus.gravity_accumulator_ns < 10_000_000_000,
+        "Gravity accumulator absurd: {}",
+        bus.gravity_accumulator_ns
+    );
+    assert!(
+        bus.das_accumulator_ns < 10_000_000_000,
+        "DAS accumulator absurd: {}",
+        bus.das_accumulator_ns
+    );
+    assert!(
+        bus.lock_delay_accumulator_ns < 10_000_000_000,
+        "Lock delay accumulator absurd: {}",
+        bus.lock_delay_accumulator_ns
+    );
 
     // Ghost piece must be at a valid position
-    assert!(bus.ghost_x >= -3 && bus.ghost_x <= 10, "Ghost x out of bounds: {}", bus.ghost_x);
-    assert!(bus.ghost_y >= 0 && bus.ghost_y < BOARD_ROWS as i8, "Ghost y out of bounds: {}", bus.ghost_y);
+    assert!(
+        bus.ghost_x >= -3 && bus.ghost_x <= 10,
+        "Ghost x out of bounds: {}",
+        bus.ghost_x
+    );
+    assert!(
+        bus.ghost_y >= 0 && bus.ghost_y < BOARD_ROWS as i8,
+        "Ghost y out of bounds: {}",
+        bus.ghost_y
+    );
 
     // Tick count must be reasonable
-    assert!(bus.tick_count < 10_000_000, "Tick count absurd: {}", bus.tick_count);
+    assert!(
+        bus.tick_count < 10_000_000,
+        "Tick count absurd: {}",
+        bus.tick_count
+    );
 }
 
 /// Verify the board has no impossible configurations.
@@ -118,7 +168,13 @@ fn assert_board_consistency(bus: &SystemBus) {
     for y in 0..BOARD_ROWS {
         // Check all cells in row are valid values
         for x in 0..BOARD_COLS {
-            assert!(bus.board[y][x].0 <= 7, "Row {} col {} has invalid cell value {}", y, x, bus.board[y][x].0);
+            assert!(
+                bus.board[y][x].0 <= 7,
+                "Row {} col {} has invalid cell value {}",
+                y,
+                x,
+                bus.board[y][x].0
+            );
         }
     }
 }

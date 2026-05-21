@@ -1,5 +1,7 @@
 use super::CudaRuntime;
-use crate::bus::{gravity_interval_ns, Cell, InputPins, PieceType, SystemBus, BOARD_COLS, BOARD_ROWS};
+use crate::bus::{
+    gravity_interval_ns, Cell, InputPins, PieceType, SystemBus, BOARD_COLS, BOARD_ROWS,
+};
 use crate::chips::tetrominoes::{I_KICKS, JLSTZ_KICKS, TETROMINOES};
 
 use rustacuda::launch;
@@ -15,7 +17,11 @@ impl CudaRuntime {
         Ok(())
     }
 
-    pub(super) fn run_input_decoder_chip(&mut self, pins: &InputPins, bus: &mut SystemBus) -> Result<(), String> {
+    pub(super) fn run_input_decoder_chip(
+        &mut self,
+        pins: &InputPins,
+        bus: &mut SystemBus,
+    ) -> Result<(), String> {
         let _ = &self.module;
 
         if pins.key_down {
@@ -37,7 +43,11 @@ impl CudaRuntime {
         Ok(())
     }
 
-    pub(super) fn run_gravity_timer_chip(&mut self, pins: &InputPins, bus: &mut SystemBus) -> Result<(), String> {
+    pub(super) fn run_gravity_timer_chip(
+        &mut self,
+        pins: &InputPins,
+        bus: &mut SystemBus,
+    ) -> Result<(), String> {
         let _ = &self.stream;
 
         bus.gravity_accumulator_ns = bus
@@ -52,7 +62,11 @@ impl CudaRuntime {
         Ok(())
     }
 
-    pub(super) fn run_das_timer_chip(&mut self, pins: &InputPins, bus: &mut SystemBus) -> Result<(), String> {
+    pub(super) fn run_das_timer_chip(
+        &mut self,
+        pins: &InputPins,
+        bus: &mut SystemBus,
+    ) -> Result<(), String> {
         let left = pins.key_left;
         let right = pins.key_right;
         let prev_left = bus.prev_key_left;
@@ -97,9 +111,7 @@ impl CudaRuntime {
             bus.das_accumulator_ns = 0;
             bus.das_last_repeat_index = 0;
         } else if bus.das_active && bus.das_direction != 0 {
-            bus.das_accumulator_ns = bus
-                .das_accumulator_ns
-                .saturating_add(pins.frame_delta_ns);
+            bus.das_accumulator_ns = bus.das_accumulator_ns.saturating_add(pins.frame_delta_ns);
 
             let acc = bus.das_accumulator_ns;
             if acc >= bus.das_delay_ns {
@@ -207,13 +219,19 @@ impl CudaRuntime {
             }
         }
 
-        bus.wires.collision_down = self.piece_collides_cfg(bus, bus.piece_x, bus.piece_y + 1, pt, pr)?;
+        bus.wires.collision_down =
+            self.piece_collides_cfg(bus, bus.piece_x, bus.piece_y + 1, pt, pr)?;
         Ok(())
     }
 
-    pub(super) fn run_lock_delay_timer_chip(&mut self, pins: &InputPins, bus: &mut SystemBus) -> Result<(), String> {
+    pub(super) fn run_lock_delay_timer_chip(
+        &mut self,
+        pins: &InputPins,
+        bus: &mut SystemBus,
+    ) -> Result<(), String> {
         let cannot_fall = bus.wires.collision_down && bus.wires.dy == 0;
-        let moved = bus.wires.dx != 0 || bus.wires.dy != 0 || bus.wires.rotate_cw || bus.wires.rotate_ccw;
+        let moved =
+            bus.wires.dx != 0 || bus.wires.dy != 0 || bus.wires.rotate_cw || bus.wires.rotate_ccw;
 
         if moved && !cannot_fall {
             bus.lock_delay_accumulator_ns = 0;
@@ -221,7 +239,9 @@ impl CudaRuntime {
             bus.wires.lock_delay_expired = false;
         } else if cannot_fall && !bus.wires.piece_locked {
             bus.wires.lock_delay_active = true;
-            bus.lock_delay_accumulator_ns = bus.lock_delay_accumulator_ns.saturating_add(pins.frame_delta_ns);
+            bus.lock_delay_accumulator_ns = bus
+                .lock_delay_accumulator_ns
+                .saturating_add(pins.frame_delta_ns);
             if bus.lock_delay_accumulator_ns >= bus.lock_delay_max_ns {
                 bus.wires.lock_delay_expired = true;
             }
@@ -258,7 +278,7 @@ impl CudaRuntime {
         bus.wires.piece_locked = true;
         bus.wires.should_spawn_next = true;
         bus.wires.render_dirty = true;
-        self.board_synced = false;  // P2: Mark board as out-of-sync
+        self.board_synced = false; // P2: Mark board as out-of-sync
         Ok(())
     }
 
@@ -274,7 +294,10 @@ impl CudaRuntime {
         Ok(())
     }
 
-    pub(super) fn run_line_clear_detector_chip(&mut self, bus: &mut SystemBus) -> Result<(), String> {
+    pub(super) fn run_line_clear_detector_chip(
+        &mut self,
+        bus: &mut SystemBus,
+    ) -> Result<(), String> {
         self.upload_board(bus)?;
 
         let mut mask: u32 = 0;
@@ -292,7 +315,10 @@ impl CudaRuntime {
         Ok(())
     }
 
-    pub(super) fn run_line_clear_committer_chip(&mut self, bus: &mut SystemBus) -> Result<(), String> {
+    pub(super) fn run_line_clear_committer_chip(
+        &mut self,
+        bus: &mut SystemBus,
+    ) -> Result<(), String> {
         let mask = bus.wires.full_row_mask;
         if mask == 0 {
             return Ok(());
@@ -313,7 +339,7 @@ impl CudaRuntime {
         }
 
         bus.wires.render_dirty = true;
-        self.board_synced = false;  // P2: Mark board as out-of-sync after clearing lines
+        self.board_synced = false; // P2: Mark board as out-of-sync after clearing lines
         Ok(())
     }
 
@@ -407,7 +433,9 @@ impl CudaRuntime {
             packed[i * 2] = dx as i32;
             packed[i * 2 + 1] = dy as i32;
         }
-        self.piece_cells.copy_from(&packed).map_err(|e| e.to_string())
+        self.piece_cells
+            .copy_from(&packed)
+            .map_err(|e| e.to_string())
     }
 
     fn piece_collides(&mut self, test_x: i8, test_y: i8) -> Result<bool, String> {
@@ -426,7 +454,9 @@ impl CudaRuntime {
 
         self.stream.synchronize().map_err(|e| e.to_string())?;
         let mut out = [0u32; 1];
-        self.scalar_out.copy_to(&mut out).map_err(|e| e.to_string())?;
+        self.scalar_out
+            .copy_to(&mut out)
+            .map_err(|e| e.to_string())?;
         Ok(out[0] != 0)
     }
 
@@ -444,7 +474,9 @@ impl CudaRuntime {
 
         self.stream.synchronize().map_err(|e| e.to_string())?;
         let mut out = [0u32; 1];
-        self.scalar_out.copy_to(&mut out).map_err(|e| e.to_string())?;
+        self.scalar_out
+            .copy_to(&mut out)
+            .map_err(|e| e.to_string())?;
         Ok(out[0] != 0)
     }
 
@@ -483,7 +515,9 @@ impl CudaRuntime {
 
         self.stream.synchronize().map_err(|e| e.to_string())?;
         let mut out = [0u32; 1];
-        self.scalar_out.copy_to(&mut out).map_err(|e| e.to_string())?;
+        self.scalar_out
+            .copy_to(&mut out)
+            .map_err(|e| e.to_string())?;
         Ok(out[0] as i8)
     }
 
@@ -500,8 +534,7 @@ impl CudaRuntime {
             kicks_packed[i * 2 + 1] = *dy as i32;
         }
 
-        let mut kicks_buf = DeviceBuffer::from_slice(&kicks_packed)
-            .map_err(|e| e.to_string())?;
+        let mut kicks_buf = DeviceBuffer::from_slice(&kicks_packed).map_err(|e| e.to_string())?;
 
         let module = &self.module;
         let stream = &self.stream;
@@ -519,7 +552,9 @@ impl CudaRuntime {
 
         self.stream.synchronize().map_err(|e| e.to_string())?;
         let mut out = [0u32; 1];
-        self.scalar_out.copy_to(&mut out).map_err(|e| e.to_string())?;
+        self.scalar_out
+            .copy_to(&mut out)
+            .map_err(|e| e.to_string())?;
         Ok(out[0])
     }
 }

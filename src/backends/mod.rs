@@ -108,12 +108,7 @@ impl BackendRuntime {
         &self.chip_routes
     }
 
-    pub fn execute_layers(
-        &mut self,
-        layers: &[Vec<Chip>],
-        pins: &InputPins,
-        bus: &mut SystemBus,
-    ) {
+    pub fn execute_layers(&mut self, layers: &[Vec<Chip>], pins: &InputPins, bus: &mut SystemBus) {
         #[cfg(feature = "cuda")]
         {
             if self.kind == BackendKind::Cuda {

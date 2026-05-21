@@ -1,6 +1,6 @@
-use crate::bus::{InputPins, SystemBus, PieceType};
-use super::LogicChip;
 pub(crate) use super::HoldControllerChip;
+use super::LogicChip;
+use crate::bus::{InputPins, PieceType, SystemBus};
 
 impl LogicChip for HoldControllerChip {
     fn tick(&self, _pins: &InputPins, bus: &mut SystemBus) {
@@ -14,7 +14,12 @@ impl LogicChip for HoldControllerChip {
         } else {
             bus.piece_type = bus.next_piece_type;
             bus.next_piece_type = PieceType(
-                ((bus.prng_state.wrapping_mul(1664525).wrapping_add(1013904223)) >> 16) as u8 % 7,
+                ((bus
+                    .prng_state
+                    .wrapping_mul(1664525)
+                    .wrapping_add(1013904223))
+                    >> 16) as u8
+                    % 7,
             );
         }
         bus.hold_piece_type = Some(old_type);

@@ -1,7 +1,7 @@
-use crate::bus::{InputPins, SystemBus};
-use crate::chips::tetrominoes::{collides, I_KICKS, JLSTZ_KICKS};
 use super::LogicChip;
 pub(crate) use super::RotationChip;
+use crate::bus::{InputPins, SystemBus};
+use crate::chips::tetrominoes::{collides, I_KICKS, JLSTZ_KICKS};
 
 impl LogicChip for RotationChip {
     fn tick(&self, _pins: &InputPins, bus: &mut SystemBus) {

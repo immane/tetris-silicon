@@ -1,7 +1,7 @@
-use crate::bus::{InputPins, SystemBus, Cell};
-use crate::chips::tetrominoes::TETROMINOES;
 use super::LogicChip;
 pub(crate) use super::PieceLockerChip;
+use crate::bus::{Cell, InputPins, SystemBus};
+use crate::chips::tetrominoes::TETROMINOES;
 
 impl LogicChip for PieceLockerChip {
     fn tick(&self, _pins: &InputPins, bus: &mut SystemBus) {

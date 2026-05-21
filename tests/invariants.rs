@@ -9,7 +9,10 @@ use tetris_silicon::bus::{InputPins, BOARD_COLS, BOARD_ROWS, FRAME_NS};
 use tetris_silicon::chips::tetrominoes::{collides, TETROMINOES};
 use tetris_silicon::motherboard::SiliconMotherboard;
 
-use harness::{arb_system_bus, arb_input_pins, count_occupied, assert_deterministic, assert_piece_in_bounds, TestBench};
+use harness::{
+    arb_input_pins, arb_system_bus, assert_deterministic, assert_piece_in_bounds, count_occupied,
+    TestBench,
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTRAINT INVARIANT: Piece position must stay within geometric bounds.
@@ -157,7 +160,10 @@ fn rotation_o_piece_never_moves() {
     // O piece should still be at the same position, but rotation may change
     assert_eq!(bus.piece_x, 3, "O piece x should not change");
     assert_eq!(bus.piece_y, 0, "O piece y should not change");
-    assert!(!bus.wires.wall_kick_applied, "O piece should not apply wall kicks");
+    assert!(
+        !bus.wires.wall_kick_applied,
+        "O piece should not apply wall kicks"
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -194,8 +200,8 @@ proptest! {
 #[test]
 fn game_over_triggers_on_spawn_collision() {
     use tetris_silicon::bus::{Cell, InputPins};
-    use tetris_silicon::chips::SpawnControllerChip;
     use tetris_silicon::chips::LogicChip;
+    use tetris_silicon::chips::SpawnControllerChip;
 
     let mut bus = tetris_silicon::bus::SystemBus::new(1);
     // Fill the top rows to force a spawn collision

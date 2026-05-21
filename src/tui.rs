@@ -26,22 +26,22 @@ pub fn render_game(
 ) {
     let chunks = Layout::horizontal([
         Constraint::Length((BOARD_COLS as u16 * PLAYFIELD_CELL_WIDTH as u16) + 4),
-        Constraint::Min(20),      // sidebar
+        Constraint::Min(20), // sidebar
     ])
     .split(frame.size());
 
     render_playfield(frame, chunks[0], bus);
 
     let side = Layout::vertical([
-        Constraint::Length(7),    // Hold
-        Constraint::Length(1),    // spacer
-        Constraint::Length(7),    // Next
-        Constraint::Length(1),    // spacer
-        Constraint::Length(7),    // Controls
-        Constraint::Length(1),    // spacer
-        Constraint::Length(6),    // Stats
-        Constraint::Length(1),    // spacer
-        Constraint::Min(8),       // Chip routing
+        Constraint::Length(7), // Hold
+        Constraint::Length(1), // spacer
+        Constraint::Length(7), // Next
+        Constraint::Length(1), // spacer
+        Constraint::Length(7), // Controls
+        Constraint::Length(1), // spacer
+        Constraint::Length(6), // Stats
+        Constraint::Length(1), // spacer
+        Constraint::Min(8),    // Chip routing
     ])
     .split(chunks[1]);
 
@@ -76,10 +76,16 @@ fn render_playfield(frame: &mut Frame, area: ratatui::layout::Rect, bus: &System
 
             if cell != 0 {
                 let color = piece_color(cell);
-                spans.push(Span::styled("███", Style::default().fg(color).bg(dim(color))));
+                spans.push(Span::styled(
+                    "███",
+                    Style::default().fg(color).bg(dim(color)),
+                ));
             } else if active {
                 let color = piece_color(bus.piece_type.0 + 1);
-                spans.push(Span::styled("███", Style::default().fg(color).bg(dim(color))));
+                spans.push(Span::styled(
+                    "███",
+                    Style::default().fg(color).bg(dim(color)),
+                ));
             } else if ghost {
                 let color = piece_color(bus.piece_type.0 + 1);
                 spans.push(Span::styled("░░░", Style::default().fg(color).reversed()));
@@ -104,18 +110,16 @@ fn render_playfield(frame: &mut Frame, area: ratatui::layout::Rect, bus: &System
 // ─── Cell Hit Testing ──────────────────────────────────────────────────────
 
 fn is_cell_active(bus: &SystemBus, cx: i8, cy: i8) -> bool {
-    let cells =
-        &crate::chips::tetrominoes::TETROMINOES[bus.piece_type.0 as usize]
-            [bus.piece_rotation as usize];
+    let cells = &crate::chips::tetrominoes::TETROMINOES[bus.piece_type.0 as usize]
+        [bus.piece_rotation as usize];
     cells
         .iter()
         .any(|&(dx, dy)| bus.piece_x + dx == cx && bus.piece_y + dy == cy)
 }
 
 fn is_cell_ghost(bus: &SystemBus, cx: i8, cy: i8) -> bool {
-    let cells =
-        &crate::chips::tetrominoes::TETROMINOES[bus.piece_type.0 as usize]
-            [bus.piece_rotation as usize];
+    let cells = &crate::chips::tetrominoes::TETROMINOES[bus.piece_type.0 as usize]
+        [bus.piece_rotation as usize];
     cells
         .iter()
         .any(|&(dx, dy)| bus.ghost_x + dx == cx && bus.ghost_y + dy == cy)
@@ -123,12 +127,7 @@ fn is_cell_ghost(bus: &SystemBus, cx: i8, cy: i8) -> bool {
 
 // ─── Mini Grid (Hold / Next) ────────────────────────────────────────────────
 
-fn render_mini(
-    frame: &mut Frame,
-    area: ratatui::layout::Rect,
-    title: &str,
-    piece_id: Option<u8>,
-) {
+fn render_mini(frame: &mut Frame, area: ratatui::layout::Rect, title: &str, piece_id: Option<u8>) {
     let block = Block::bordered().title(title);
     let inner = block.inner(area);
     frame.render_widget(block, area);
@@ -156,9 +155,15 @@ fn render_mini(
 
 // ─── Status Panel ───────────────────────────────────────────────────────────
 
-fn render_status(frame: &mut Frame, area: ratatui::layout::Rect, bus: &SystemBus, backend_name: &str, gpu_ticks: u64) {
+fn render_status(
+    frame: &mut Frame,
+    area: ratatui::layout::Rect,
+    bus: &SystemBus,
+    backend_name: &str,
+    gpu_ticks: u64,
+) {
     let backend_color = if backend_name.starts_with("cuda") {
-        Color::Rgb(118, 185, 0)  // NVIDIA green
+        Color::Rgb(118, 185, 0) // NVIDIA green
     } else {
         Color::Gray
     };
@@ -173,7 +178,10 @@ fn render_status(frame: &mut Frame, area: ratatui::layout::Rect, bus: &SystemBus
         ]),
         Line::from(vec![
             Span::raw(" Lines: "),
-            Span::styled(format!("{}", bus.lines_cleared), Style::default().fg(Color::Green)),
+            Span::styled(
+                format!("{}", bus.lines_cleared),
+                Style::default().fg(Color::Green),
+            ),
         ]),
         Line::from(vec![
             Span::raw(" Backend: "),
@@ -183,7 +191,10 @@ fn render_status(frame: &mut Frame, area: ratatui::layout::Rect, bus: &SystemBus
     if gpu_ticks > 0 {
         lines.push(Line::from(vec![
             Span::raw(" GPU ticks: "),
-            Span::styled(format!("{gpu_ticks}"), Style::default().fg(Color::Rgb(118, 185, 0))),
+            Span::styled(
+                format!("{gpu_ticks}"),
+                Style::default().fg(Color::Rgb(118, 185, 0)),
+            ),
         ]));
     }
     frame.render_widget(
@@ -192,14 +203,20 @@ fn render_status(frame: &mut Frame, area: ratatui::layout::Rect, bus: &SystemBus
     );
 }
 
-fn render_chip_routes(frame: &mut Frame, area: ratatui::layout::Rect, chip_backend_lines: &[String]) {
+fn render_chip_routes(
+    frame: &mut Frame,
+    area: ratatui::layout::Rect,
+    chip_backend_lines: &[String],
+) {
     let block = Block::bordered().title(" CHIP ROUTING ");
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
     if chip_backend_lines.is_empty() {
         frame.render_widget(
-            Paragraph::new(Text::from(vec![Line::from(Span::raw(" waiting for first tick... "))])),
+            Paragraph::new(Text::from(vec![Line::from(Span::raw(
+                " waiting for first tick... ",
+            ))])),
             inner,
         );
         return;
@@ -214,11 +231,15 @@ fn render_chip_routes(frame: &mut Frame, area: ratatui::layout::Rect, chip_backe
         } else {
             Color::Gray
         };
-        lines.push(Line::from(Span::styled(line.clone(), Style::default().fg(color))));
+        lines.push(Line::from(Span::styled(
+            line.clone(),
+            Style::default().fg(color),
+        )));
     }
 
     let split = (lines.len() + 1) / 2;
-    let cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)]).split(inner);
+    let cols =
+        Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)]).split(inner);
     frame.render_widget(Paragraph::new(Text::from(lines[..split].to_vec())), cols[0]);
     frame.render_widget(Paragraph::new(Text::from(lines[split..].to_vec())), cols[1]);
 }
@@ -243,12 +264,7 @@ fn render_controls(frame: &mut Frame, area: ratatui::layout::Rect) {
 
 // ─── Overlay ────────────────────────────────────────────────────────────────
 
-fn render_overlay(
-    frame: &mut Frame,
-    area: ratatui::layout::Rect,
-    msg: &str,
-    color: Color,
-) {
+fn render_overlay(frame: &mut Frame, area: ratatui::layout::Rect, msg: &str, color: Color) {
     let overlay = Block::default().style(Style::default().bg(Color::Black));
     frame.render_widget(overlay, area);
 
@@ -272,13 +288,13 @@ fn render_overlay(
 
 fn piece_color(piece_id: u8) -> Color {
     match piece_id {
-        1 => Color::Cyan,                     // I
-        2 => Color::Blue,                     // J
-        3 => Color::Rgb(255, 165, 0),         // L (Orange)
-        4 => Color::Yellow,                   // O
-        5 => Color::Green,                    // S
-        6 => Color::Magenta,                  // T
-        7 => Color::Red,                      // Z
+        1 => Color::Cyan,             // I
+        2 => Color::Blue,             // J
+        3 => Color::Rgb(255, 165, 0), // L (Orange)
+        4 => Color::Yellow,           // O
+        5 => Color::Green,            // S
+        6 => Color::Magenta,          // T
+        7 => Color::Red,              // Z
         _ => Color::White,
     }
 }

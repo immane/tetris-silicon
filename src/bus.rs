@@ -8,17 +8,17 @@ pub const BOARD_ROWS: usize = 20;
 pub const BOARD_SIZE: usize = BOARD_COLS * BOARD_ROWS; // 200
 
 // ─── Timing Constants ─────────────────────────────────────────────────────
-pub const FRAME_NS: u64 = 16_666_667;            // ~60 Hz
-pub const DAS_DELAY_NS: u64 = 266_666_672;        // ~267ms (16 frames)
-pub const DAS_REPEAT_NS: u64 = 100_000_002;       // ~100ms (6 frames)
-pub const LOCK_DELAY_MAX_NS: u64 = 500_000_010;   // ~500ms (30 frames)
+pub const FRAME_NS: u64 = 16_666_667; // ~60 Hz
+pub const DAS_DELAY_NS: u64 = 266_666_672; // ~267ms (16 frames)
+pub const DAS_REPEAT_NS: u64 = 100_000_002; // ~100ms (6 frames)
+pub const LOCK_DELAY_MAX_NS: u64 = 500_000_010; // ~500ms (30 frames)
 pub const MAX_FRAME_DELTA_NS: u64 = 1_000_000_000; // 1s cap for tab-away
 
 /// NES-style gravity table: frames per gridcell at 60 Hz.
 /// Index = level - 1. Beyond index 19, uses last entry (1 frame).
 pub const GRAVITY_FRAMES: [u64; 20] = [
-    48, 43, 38, 33, 28, 23, 18, 13, 8, 6,   // levels 1-10
-    5,  5,  5,  4,  4,  4,  3,  3,  3, 2,    // levels 11-20
+    48, 43, 38, 33, 28, 23, 18, 13, 8, 6, // levels 1-10
+    5, 5, 5, 4, 4, 4, 3, 3, 3, 2, // levels 11-20
 ];
 
 /// Convert a 1-based level number to the gravity interval in nanoseconds.
@@ -54,32 +54,32 @@ pub struct InputPins {
     /// Wall-clock nanoseconds elapsed since previous tick.
     pub frame_delta_ns: u64,
 
-    pub key_left:   bool,
-    pub key_right:  bool,
-    pub key_down:   bool,    // soft drop
-    pub key_up:     bool,    // rotate CW (alternate mapping)
-    pub key_z:      bool,    // rotate CCW
-    pub key_x:      bool,    // rotate CW
-    pub key_space:  bool,    // hard drop
-    pub key_c:      bool,    // hold
+    pub key_left: bool,
+    pub key_right: bool,
+    pub key_down: bool,  // soft drop
+    pub key_up: bool,    // rotate CW (alternate mapping)
+    pub key_z: bool,     // rotate CCW
+    pub key_x: bool,     // rotate CW
+    pub key_space: bool, // hard drop
+    pub key_c: bool,     // hold
     pub key_escape: bool,
-    pub key_enter:  bool,
+    pub key_enter: bool,
 }
 
 impl Default for InputPins {
     fn default() -> Self {
         Self {
             frame_delta_ns: 0,
-            key_left:   false,
-            key_right:  false,
-            key_down:   false,
-            key_up:     false,
-            key_z:      false,
-            key_x:      false,
-            key_space:  false,
-            key_c:      false,
+            key_left: false,
+            key_right: false,
+            key_down: false,
+            key_up: false,
+            key_z: false,
+            key_x: false,
+            key_space: false,
+            key_c: false,
             key_escape: false,
-            key_enter:  false,
+            key_enter: false,
         }
     }
 }
@@ -90,8 +90,8 @@ impl Default for InputPins {
 #[derive(Clone, Debug)]
 pub struct Wires {
     // Movement requests
-    pub dx: i8,                           // -1 left, 0 none, +1 right
-    pub dy: i8,                           // 0 none, +1 soft drop
+    pub dx: i8, // -1 left, 0 none, +1 right
+    pub dy: i8, // 0 none, +1 soft drop
     pub rotate_cw: bool,
     pub rotate_ccw: bool,
     pub hard_drop_requested: bool,
@@ -165,7 +165,7 @@ pub struct SystemBus {
     pub piece_type: PieceType,
     pub piece_x: i8,
     pub piece_y: i8,
-    pub piece_rotation: u8,          // 0=spawn, 1=CW, 2=180, 3=CCW
+    pub piece_rotation: u8, // 0=spawn, 1=CW, 2=180, 3=CCW
 
     // Piece queue
     pub next_piece_type: PieceType,
@@ -205,16 +205,16 @@ pub struct SystemBus {
     pub lock_delay_max_ns: u64,
 
     // Previous key state (edge detection latches)
-    pub prev_key_left:   bool,
-    pub prev_key_right:  bool,
-    pub prev_key_down:   bool,
-    pub prev_key_up:     bool,
-    pub prev_key_z:      bool,
-    pub prev_key_x:      bool,
-    pub prev_key_c:      bool,
-    pub prev_key_space:  bool,
+    pub prev_key_left: bool,
+    pub prev_key_right: bool,
+    pub prev_key_down: bool,
+    pub prev_key_up: bool,
+    pub prev_key_z: bool,
+    pub prev_key_x: bool,
+    pub prev_key_c: bool,
+    pub prev_key_space: bool,
     pub prev_key_escape: bool,
-    pub prev_key_enter:  bool,
+    pub prev_key_enter: bool,
 
     // ═══ WIRES (reset every tick) ═══
     pub wires: Wires,
@@ -249,16 +249,16 @@ impl SystemBus {
             prng_state: 0xDEADBEEF,
             lock_delay_accumulator_ns: 0,
             lock_delay_max_ns: LOCK_DELAY_MAX_NS,
-            prev_key_left:   false,
-            prev_key_right:  false,
-            prev_key_down:   false,
-            prev_key_up:     false,
-            prev_key_z:      false,
-            prev_key_x:      false,
-            prev_key_c:      false,
-            prev_key_space:  false,
+            prev_key_left: false,
+            prev_key_right: false,
+            prev_key_down: false,
+            prev_key_up: false,
+            prev_key_z: false,
+            prev_key_x: false,
+            prev_key_c: false,
+            prev_key_space: false,
             prev_key_escape: false,
-            prev_key_enter:  false,
+            prev_key_enter: false,
             wires: Wires::default(),
         }
     }

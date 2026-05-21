@@ -14,7 +14,7 @@ const CUDA_KERNEL_CHIPS: [ChipId; 4] = [
     ChipId::CollisionDetector,
     ChipId::LineClearDetector,
     ChipId::GhostComputer,
-    ChipId::Rotation,  // P1: Batch wall kick test optimization
+    ChipId::Rotation, // P1: Batch wall kick test optimization
 ];
 
 /// Contract default: chips eligible for CUDA routing (GPU kernel or CPU emulation).
@@ -112,9 +112,7 @@ impl BackendRuntime {
                 }
             }
             Err(err) => {
-                eprintln!(
-                    "[backend] cuda runtime init failed ({err}); falling back to cpu"
-                );
+                eprintln!("[backend] cuda runtime init failed ({err}); falling back to cpu");
                 Self::cpu()
             }
         }
@@ -226,7 +224,7 @@ fn run_chip_on_cuda(
             ChipId::CollisionDetector => cuda.run_collision_chip(bus),
             ChipId::LineClearDetector => cuda.run_line_clear_detector_chip(bus),
             ChipId::GhostComputer => cuda.run_ghost_chip(bus),
-            ChipId::Rotation => cuda.run_rotation_chip(bus),  // P1: GPU batch wall kick test
+            ChipId::Rotation => cuda.run_rotation_chip(bus), // P1: GPU batch wall kick test
             _ => unreachable!("has_gpu_kernel must match"),
         }
     } else {
@@ -242,18 +240,16 @@ impl CudaRuntime {
 
         let device = Device::get_device(0).map_err(|e| e.to_string())?;
         let device_name = device.name().map_err(|e| e.to_string())?;
-        let context = Context::create_and_push(
-            ContextFlags::MAP_HOST | ContextFlags::SCHED_AUTO,
-            device,
-        )
-        .map_err(|e| e.to_string())?;
+        let context =
+            Context::create_and_push(ContextFlags::MAP_HOST | ContextFlags::SCHED_AUTO, device)
+                .map_err(|e| e.to_string())?;
 
         let ptx = CString::new(CUDA_MIXED_PTX).map_err(|e| e.to_string())?;
         let module = Module::load_from_string(&ptx).map_err(|e| e.to_string())?;
         let stream = Stream::new(StreamFlags::NON_BLOCKING, None).map_err(|e| e.to_string())?;
 
-        let board = DeviceBuffer::from_slice(&[0u8; BOARD_COLS * BOARD_ROWS])
-            .map_err(|e| e.to_string())?;
+        let board =
+            DeviceBuffer::from_slice(&[0u8; BOARD_COLS * BOARD_ROWS]).map_err(|e| e.to_string())?;
         let piece_cells = DeviceBuffer::from_slice(&[0i32; 8]).map_err(|e| e.to_string())?;
         let scalar_out = DeviceBuffer::from_slice(&[0u32]).map_err(|e| e.to_string())?;
 
@@ -264,7 +260,7 @@ impl CudaRuntime {
             board,
             piece_cells,
             scalar_out,
-            board_synced: false,  // P2: Initially not synced
+            board_synced: false, // P2: Initially not synced
             _context: context,
         })
     }

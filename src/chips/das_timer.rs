@@ -1,6 +1,6 @@
-use crate::bus::{InputPins, SystemBus};
-use super::LogicChip;
 pub(crate) use super::DasTimerChip;
+use super::LogicChip;
+use crate::bus::{InputPins, SystemBus};
 
 impl LogicChip for DasTimerChip {
     fn tick(&self, pins: &InputPins, bus: &mut SystemBus) {
@@ -48,9 +48,7 @@ impl LogicChip for DasTimerChip {
             bus.das_accumulator_ns = 0;
             bus.das_last_repeat_index = 0;
         } else if bus.das_active && bus.das_direction != 0 {
-            bus.das_accumulator_ns = bus
-                .das_accumulator_ns
-                .saturating_add(pins.frame_delta_ns);
+            bus.das_accumulator_ns = bus.das_accumulator_ns.saturating_add(pins.frame_delta_ns);
 
             let acc = bus.das_accumulator_ns;
             if acc >= bus.das_delay_ns {

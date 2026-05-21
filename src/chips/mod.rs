@@ -5,20 +5,20 @@
 use crate::bus::{InputPins, SystemBus};
 
 // ─── Module declarations for chip implementations ─────────────────────────
-mod gravity_timer;
-mod das_timer;
-mod lock_delay_timer;
 mod collision;
-mod rotation;
+mod das_timer;
+mod ghost;
+mod gravity_timer;
+mod hold_controller;
+mod input_decoder;
+mod level_calc;
+mod line_clear;
+mod lock_delay_timer;
 mod movement;
 mod piece_locker;
-mod line_clear;
+mod rotation;
 mod score_keeper;
-mod level_calc;
-mod hold_controller;
 mod spawn_controller;
-mod ghost;
-mod input_decoder;
 pub mod tetrominoes;
 
 // ─── Unit Struct Declarations ─────────────────────────────────────────────
@@ -82,21 +82,21 @@ pub enum Chip {
 impl LogicChip for Chip {
     fn tick(&self, pins: &InputPins, bus: &mut SystemBus) {
         match self {
-            Chip::InputDecoder(c)       => c.tick(pins, bus),
-            Chip::GravityTimer(c)       => c.tick(pins, bus),
-            Chip::DasTimer(c)           => c.tick(pins, bus),
-            Chip::LockDelayTimer(c)     => c.tick(pins, bus),
-            Chip::CollisionDetector(c)  => c.tick(pins, bus),
-            Chip::Rotation(c)           => c.tick(pins, bus),
-            Chip::Movement(c)           => c.tick(pins, bus),
-            Chip::PieceLocker(c)        => c.tick(pins, bus),
-            Chip::LineClearDetector(c)  => c.tick(pins, bus),
+            Chip::InputDecoder(c) => c.tick(pins, bus),
+            Chip::GravityTimer(c) => c.tick(pins, bus),
+            Chip::DasTimer(c) => c.tick(pins, bus),
+            Chip::LockDelayTimer(c) => c.tick(pins, bus),
+            Chip::CollisionDetector(c) => c.tick(pins, bus),
+            Chip::Rotation(c) => c.tick(pins, bus),
+            Chip::Movement(c) => c.tick(pins, bus),
+            Chip::PieceLocker(c) => c.tick(pins, bus),
+            Chip::LineClearDetector(c) => c.tick(pins, bus),
             Chip::LineClearCommitter(c) => c.tick(pins, bus),
-            Chip::ScoreKeeper(c)        => c.tick(pins, bus),
-            Chip::LevelCalculator(c)    => c.tick(pins, bus),
-            Chip::HoldController(c)     => c.tick(pins, bus),
-            Chip::SpawnController(c)    => c.tick(pins, bus),
-            Chip::GhostComputer(c)      => c.tick(pins, bus),
+            Chip::ScoreKeeper(c) => c.tick(pins, bus),
+            Chip::LevelCalculator(c) => c.tick(pins, bus),
+            Chip::HoldController(c) => c.tick(pins, bus),
+            Chip::SpawnController(c) => c.tick(pins, bus),
+            Chip::GhostComputer(c) => c.tick(pins, bus),
         }
     }
 }

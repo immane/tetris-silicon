@@ -1,7 +1,7 @@
-use crate::bus::{InputPins, SystemBus};
-use crate::chips::tetrominoes::{collides, ghost_y};
 use super::LogicChip;
 pub(crate) use super::MovementChip;
+use crate::bus::{InputPins, SystemBus};
+use crate::chips::tetrominoes::{collides, ghost_y};
 
 impl LogicChip for MovementChip {
     fn tick(&self, _pins: &InputPins, bus: &mut SystemBus) {
@@ -40,12 +40,6 @@ impl LogicChip for MovementChip {
         }
 
         // Re-test collision_down at final position
-        bus.wires.collision_down = collides(
-            bus.piece_x,
-            bus.piece_y + 1,
-            pt,
-            pr,
-            &bus.board,
-        );
+        bus.wires.collision_down = collides(bus.piece_x, bus.piece_y + 1, pt, pr, &bus.board);
     }
 }

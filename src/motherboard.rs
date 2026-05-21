@@ -7,8 +7,8 @@ use crate::bus::{GamePhase, InputPins, SystemBus, Wires};
 use crate::chips::{
     Chip, CollisionDetectorChip, DasTimerChip, GhostComputerChip, GravityTimerChip,
     HoldControllerChip, InputDecoderChip, LevelCalculatorChip, LineClearCommitterChip,
-    LineClearDetectorChip, LockDelayTimerChip, MovementChip, PieceLockerChip,
-    RotationChip, ScoreKeeperChip, SpawnControllerChip,
+    LineClearDetectorChip, LockDelayTimerChip, MovementChip, PieceLockerChip, RotationChip,
+    ScoreKeeperChip, SpawnControllerChip,
 };
 
 /// The SiliconMotherboard physically arranges LogicChips in a 4-layer

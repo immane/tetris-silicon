@@ -1,7 +1,7 @@
-use crate::bus::{InputPins, SystemBus, Cell, BOARD_COLS, BOARD_ROWS};
-use super::LogicChip;
-pub(crate) use super::LineClearDetectorChip;
 pub(crate) use super::LineClearCommitterChip;
+pub(crate) use super::LineClearDetectorChip;
+use super::LogicChip;
+use crate::bus::{Cell, InputPins, SystemBus, BOARD_COLS, BOARD_ROWS};
 
 // ─── LineClearDetectorChip ────────────────────────────────────────────────
 

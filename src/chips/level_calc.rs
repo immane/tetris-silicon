@@ -1,6 +1,6 @@
-use crate::bus::{gravity_interval_ns, InputPins, SystemBus};
-use super::LogicChip;
 pub(crate) use super::LevelCalculatorChip;
+use super::LogicChip;
+use crate::bus::{gravity_interval_ns, InputPins, SystemBus};
 
 impl LogicChip for LevelCalculatorChip {
     fn tick(&self, _pins: &InputPins, bus: &mut SystemBus) {

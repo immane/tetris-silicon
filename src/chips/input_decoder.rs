@@ -1,6 +1,6 @@
-use crate::bus::{InputPins, SystemBus};
-use super::LogicChip;
 pub(crate) use super::InputDecoderChip;
+use super::LogicChip;
+use crate::bus::{InputPins, SystemBus};
 
 impl LogicChip for InputDecoderChip {
     fn tick(&self, pins: &InputPins, bus: &mut SystemBus) {

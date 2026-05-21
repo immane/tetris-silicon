@@ -1,6 +1,6 @@
-use crate::bus::{InputPins, SystemBus};
 use super::LogicChip;
 pub(crate) use super::ScoreKeeperChip;
+use crate::bus::{InputPins, SystemBus};
 
 impl LogicChip for ScoreKeeperChip {
     fn tick(&self, _pins: &InputPins, bus: &mut SystemBus) {
