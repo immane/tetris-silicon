@@ -67,6 +67,8 @@ External I/O -> InputPins (冻结快照)
 
 项目遵循 `docs/architecture/SILICON_PARADIGM_SPEC.md` 中的规范。
 
+![TETRIS-Silicon 架构全景图](docs/images/tetris-silicon-arch.png)
+
 ## 为何这个范式有效
 
 ### 1) 由构造保证的确定性
