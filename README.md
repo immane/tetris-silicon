@@ -67,6 +67,8 @@ Core files:
 
 This repository follows the architecture described in `docs/architecture/SILICON_PARADIGM_SPEC.md`.
 
+![TETRIS-Silicon Architecture Diagram](docs/images/tetris-silicon-arch.png)
+
 ## What Makes This Paradigm Powerful
 
 ### 1) Determinism by Construction
